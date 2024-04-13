@@ -1,0 +1,28 @@
+# ipfs can generate profiling dump files
+*.cpuprof
+*.memprof
+
+*.swp
+.ipfsconfig
+*.out
+*.coverprofile
+*.test
+*.orig
+*~
+
+coverage.txt
+gx-workspace-update.json
+
+.ipfs
+bin/gx
+bin/gx*
+bin/tmp
+
+# remove gx-lock.json when we switch to this by default
+gx-lock.json
+.gx/cache
+
+
+vendor
+.tarball
+go-ipfs-source.tar.gz
