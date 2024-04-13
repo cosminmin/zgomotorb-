@@ -1,0 +1,53 @@
+FROM golang:1.14.4-buster 
+LABEL maintainer="Steven Allen <steven@stebalien.com>"
+
+# add test user (sharness tests cannot run as root)
+RUN groupadd -r tester && useradd -r -g tester -d /tester tester && \
+        mkdir -p /tester && chown -R tester:tester /tester
+
+# install deps
+RUN apt-get update && apt-get install -y \
+  socat \
+  libssl-dev \
+  ca-certificates \
+  fuse \
+  xz-utils \
+  less \
+  sudo  \
+  net-tools \
+  htop
+
+# Add suid bit on fusermount so it will run properly
+RUN chmod 4755 /bin/fusermount
+
+# Create mount points for `ipfs mount` command
+RUN mkdir /ipfs /ipns \
+  && chown tester:tester /ipfs /ipns
+
+ENV SRC_DIR /go-ipfs
+
+# make output directories.
+VOLUME /tmp/circleci-artifacts
+VOLUME /tmp/circleci-workspace
+VOLUME /tmp/circleci-test-results
+RUN mkdir -p /tmp/circleci-artifacts /tmp/circleci-workspace /tmp/circleci-test-results/unit /tmp/circleci-test-results/sharness
+RUN chown tester:tester -R /tmp/circleci-artifacts /tmp/circleci-workspace /tmp/circleci-test-results
+
+# proceed as tester
+USER tester
+
+# download packages first so they can be cached.
+COPY --chown=tester:tester go.mod go.sum $SRC_DIR/
+RUN cd $SRC_DIR && \
+        go mod download
+
+COPY --chown=tester:tester . $SRC_DIR
+
+ENV GO111MODULE "on"
+ENV TEST_NO_DOCKER 1
+ENV TEST_NO_FUSE 1
+ENV TEST_VERBOSE 1
+
+WORKDIR /go-ipfs
+
+CMD /go-ipfs/run_sharness.sh
